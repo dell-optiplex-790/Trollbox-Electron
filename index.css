@@ -1,5 +1,10 @@
+@font-face {
+    font-family: 'Comic Mono';
+    src: url('ComicMono.ttf')
+}
+
 :root {
-    font-family: "Comic Code Ligatures", "Comic Code", monospace;
+    font-family: /*  "Comic Code Ligatures", "Comic Code"  // Comic Code isn't free, so I cannot include it. You'll have to live with Comic Mono, which is a free font.  */ "Comic Mono", monospace;
     color: snow;
     background: midnightblue;
     scrollbar-color: white transparent;
@@ -14,6 +19,7 @@ body {
     width: 100vw;
     height: 100vh;
     margin: 0;
+    overflow: hidden;
 }
 
 main {
@@ -59,7 +65,7 @@ main {
     width: 60vw;
 }
 
-.chat, .settings {
+.chat {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -111,14 +117,22 @@ main {
 
 .timestamp {
     width: 8ch;
+    margin-right: 1.5ch;
 }
 
 .name {
-    margin-right: 0.5ch;
+    margin-right: 1.5ch;
 }
 
 .name:after {
     content: ':';
+    color: #fff;
+}
+
+.name:hover, .user:hover, .room:hover {
+    background-color: rgba(86, 86, 86, 0.2);
+    cursor: default;
+    border-radius: 8px;
 }
 
 .king:before {
@@ -130,13 +144,17 @@ main {
 }
 
 .king.blocked:before {
-    content: "❌👑";
+    content: "❌ 👑";
 }
 
 .bot:after {
-    content: "🤖";
+    content: " 🤖";
 }
 
-.hidden {
-    display: none !important;
+.room:hover {
+    cursor: pointer;
+}
+
+#settingsButton {
+    width: min-content !important;
 }

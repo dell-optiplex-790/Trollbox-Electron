@@ -4,8 +4,8 @@
 <head>
 	<meta charset="UTF-8" />
 	<!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-	<meta http-equiv="Content-Security-Policy" content="script-src 'self';" />
-	<meta http-equiv="X-Content-Security-Policy" content="script-src 'self';" />
+	<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+	<meta http-equiv="X-Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
 
 	<link rel="stylesheet" href="index.css">
 
@@ -16,32 +16,10 @@
 	<main>
 		<div class="rooms" id="rooms"></div>
 		<div class="chatContainer">
-			<div class="chat" id="chat"></div>
-			<div class="settings hidden" id="settings">
-				<p>
-				<form>
-					<label for="nicknameInput">Nickname</label><br>
-					<input type="text" id="nicknameInput" name="nicknameInput"><br>
-					<input type="submit" value="Save">
-				</form>
-				</p>
-				<p>
-				<form>
-					<label for="colorInput">Color</label><br>
-					<input type="text" id="colorInput" name="colorInput"><br>
-					<input type="submit" value="Save">
-				</form>
-				</p>
-				<p>
-				<form>
-					<label for="blockInput">Blocks</label><br>
-					<textarea name="blockInput" id="blockInput"></textarea><br>
-					<input type="submit" value="Save">
-				</form>
-				</p>
+			<div class="chat" id="chat">
 			</div>
 			<div class="toolbar">
-				<button id="settingsButton">Ruxvania</button>
+				<button id="settingsButton">nick</button>
 				<textarea id="chatInput"></textarea>
 				<button id="sendButton">Send</button>
 			</div>

@@ -8,5 +8,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	},
 	socketEmit: function(...data) {
 		ipcRenderer.send('socketEmit', data);
+	},
+	onAppConfig: function(callback) {
+		ipcRenderer.on('appConfig', (_event, value) => callback(value))
+	},
+	getAppConfig: function() {
+		ipcRenderer.send('getAppConfig');
+	},
+	copy: function(text) {
+		ipcRenderer.send('copy', text);
 	}
 });
