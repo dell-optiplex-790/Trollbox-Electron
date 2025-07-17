@@ -3,10 +3,19 @@
 const DateTime = luxon.DateTime;
 const onSocketReceive = window.electronAPI.onSocketReceive;
 const socketEmit = window.electronAPI.socketEmit;
+const getAppConfig = window.electronAPI.getAppConfig;
+const onAppConfig = window.electronAPI.onAppConfig;
+const copy = window.electronAPI.copy;
+window.copy = copy;
+
+onAppConfig((config) => {
+    window.config = config;
+    settingsButton.innerText = config.nick;
+    socketEmit("user joined", config.nick||"anonymous", config.color||"", "", "");
+})
 
 const rooms = document.getElementById("rooms");
 const chat = document.getElementById("chat");
-const settings = document.getElementById("settings");
 const users = document.getElementById("users");
 const settingsButton = document.getElementById("settingsButton");
 const chatInput = document.getElementById("chatInput");
@@ -17,11 +26,14 @@ const sendButton = document.getElementById("sendButton");
 function createRoom(name) {
     const room = document.createElement("span");
     room.className = "room";
-    room.innerHTML = name;
+    room.innerText = name;
+    room.addEventListener('click', (event) => {
+        socketEmit('message', '/r ' + event.target.innerText)
+    })
     rooms.appendChild(room);
 };
 
-function createMessage(timestamp, nick, color, content) {
+function createMessage(timestamp, nick, color, home, content, system) {
     const message = document.createElement("span");
     message.className = "message";
 
@@ -30,11 +42,28 @@ function createMessage(timestamp, nick, color, content) {
     messageTimestamp.innerHTML = timestamp;
     message.appendChild(messageTimestamp);
 
-    const messageNick = document.createElement("span");
-    messageNick.className = "name";
-    messageNick.innerHTML = nick;
-    messageNick.style = 'color:' + color + ';';
-    message.appendChild(messageNick);
+    const user = document.createElement("span");
+    if(system) {
+        user.innerHTML = nick;
+    } else {
+        const caption = document.createElement("bdi");
+        caption.innerHTML = nick;
+        caption.title = home;
+        caption.addEventListener('click', (event) => {
+            copy(event.target.title);
+        })
+        user.appendChild(caption);
+    }
+    if (color) {
+        user.style = "color: " + color.split(';')[0] + ";";
+    };
+    if(system) {
+        user.className = "user";
+        user.style.marginRight = "1.5ch";
+    } else {
+        user.className = "name";
+    }
+    message.appendChild(user);
 
     const messageContent = document.createElement("span");
     messageContent.className = "content";
@@ -42,13 +71,19 @@ function createMessage(timestamp, nick, color, content) {
     message.appendChild(messageContent);
 
     chat.appendChild(message);
-    chat.lastChild.scrollIntoView(true);
 };
 
-function createUser(nick, color, blocked, bot) {
+function createUser(nick, color, home, blocked, bot, HTMLout) {
     const user = document.createElement("span");
+    user.style.fontWeight = "bold";
     user.className = "user";
-    user.innerHTML = nick;
+    const caption = document.createElement("bdi");
+    caption.innerHTML = nick;
+    caption.title = home;
+    caption.addEventListener('click', (event) => {
+        copy(event.target.title);
+    })
+    user.appendChild(caption);
     if (color) {
         user.style = "color: " + color + ";";
     };
@@ -58,43 +93,52 @@ function createUser(nick, color, blocked, bot) {
     if (bot) {
         user.classList.add("bot");
     };
-    users.appendChild(user);
+    if(!HTMLout) {
+        users.appendChild(user);
+    } else {
+        caption.setAttribute("onclick", "copy('" + home + "');");
+        return user.outerHTML;
+    }
 };
 
 
 
 onSocketReceive(function (event) {
-
     if (event.name === "connect") {
         console.log("Connected");
-        socketEmit("user joined", "Ruxvania", "lavender", "", "");
-
+        getAppConfig();
     } else if (event.name === "message") {
-        const date = DateTime.fromMillis(event.data.date);
+        const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         const parsedContent = he.decode(event.data.msg).replace(/(?:\r\n|\r|\n)/g, '<br>');
-        createMessage(timestamp, event.data.nick, event.data.color, parsedContent);
-
-    } else if (event.name === "user joined") {
-        const timestamp = DateTime.now().toLocaleString(DateTime.TIME_SIMPLE);
-        const content = event.data.nick + " joined teh trollbox."
-        createMessage(timestamp, ">", "lime", content);
-
-    } else if (event.name === "user left") {
-        const timestamp = DateTime.now().toLocaleString(DateTime.TIME_SIMPLE);
-        const content = event.data.nick + " left teh trollbox."
-        createMessage(timestamp, "<", "red", content);
-
+        createMessage(timestamp, event.data.nick, event.data.color, event.data.home, parsedContent, event.data.home==='trollbox', false);
+        chat.lastChild.scrollIntoView(true);
     } else if (event.name === "update users") {
         users.innerHTML = "";
-        for (let userLocation in event.data) {
-            let user = event.data[userLocation]
-            createUser(user.nick, user.color, false, user.isBot);
+        rooms.innerHTML = "";
+        let roomsList = [];
+        for (let user in event.data) {
+            let userLocation = event.data[user]
+            createUser(userLocation.nick, userLocation.color, userLocation.home, false, userLocation.isBot);
+            if(!roomsList.includes(userLocation.room)) {
+                roomsList.push(userLocation.room);
+                createRoom(userLocation.room);
+                console.log(1)
+            }
         };
         users.firstChild.classList.add("king");
+    } else if (event.name === "user joined") {
+        const date = DateTime.fromMillis(Date.now());
+        const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
+        createMessage(timestamp, ">", "lightgreen", "trollbox", createUser(event.data.nick, event.data.color, event.data.home, false, false, true) + " has joined!", true);
+    } else if (event.name === "user left") {
+        const date = DateTime.fromMillis(Date.now());
+        const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
+        createMessage(timestamp, "<", "tomato", "trollbox", createUser(event.data.nick, event.data.color, event.data.home, false, false, true) + " has left!", true);
     };
-
 });
+
+
 
 
 
@@ -115,21 +159,9 @@ function sendChatInput() {
     };
 };
 
+socketEmit("message", ""); // connect, please!
+
 function clearChatInput() {
     chatInput.value = "";
     chatInput.innerHTML = '';
-};
-
-
-
-settingsButton.addEventListener("click", toggleSettings);
-
-function toggleSettings() {
-    if (settings.classList.contains("hidden")) {
-        settings.classList.remove("hidden");
-        chat.classList.add("hidden");
-    } else {
-        settings.classList.add("hidden");
-        chat.classList.remove("hidden");
-    };
 };
