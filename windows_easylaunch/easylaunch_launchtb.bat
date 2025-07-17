@@ -1,1 +1,1 @@
-@start /min "" cmd /c electron ..
+@cd "%~dp0.." && @start /min "" cmd /c electron .
