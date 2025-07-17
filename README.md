@@ -1,2 +1,2 @@
 # Trollbox-Electron
-Desktop widnows93 trollbox client.
+This is a desktop Trollbox client.

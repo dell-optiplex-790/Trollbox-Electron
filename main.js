@@ -1,10 +1,13 @@
 import { app, BrowserWindow, Menu, ipcMain } from 'electron';
 import path from 'node:path';
 import io from "socket.io-client";
+import fs from 'fs';
+import { join } from 'path';
+import { clipboard } from 'electron';
 
 // Socket
 
-export let socket = await io('wss://www.windows93.net:8088', {
+export let socket = await io('ws://www.windows93.net:8081', {
 	forceNew: true,
 	transportOptions: {
 		polling: {
@@ -14,8 +17,8 @@ export let socket = await io('wss://www.windows93.net:8088', {
 				"Cache-Control": "no-cache",
 				"Connection": "keep-alive",
 				"Cookie": "",
-				"Host": "www.windows93.net:8086",
-				"Origin": "https://www.windows93.net",
+				"Host": "www.windows93.net:8081",
+				"Origin": "http://www.windows93.net",
 				"Pragma": "no-cache",
 				"Referer": 'http://www.windows93.net/trollbox/index.php',
 				"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
@@ -24,22 +27,28 @@ export let socket = await io('wss://www.windows93.net:8088', {
 	}
 });
 
+var config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json'), 'utf8'));
+
+
 // Electron things
 
-// await Menu.setApplicationMenu(null);
+if(!config.debug) {
+	await Menu.setApplicationMenu(null);
+}
 
 const createWindow = () => {
 	const win = new BrowserWindow({
-		width: 800,
-		height: 600,
+		width: 950,
+		height: 750,
 		webPreferences: {
 			contextIsolation: true,
 			nodeIntegration: false,
 			nodeIntegrationInWorker: false,
 			preload: path.join(import.meta.dirname, "preload.cjs"),
-			devTools: true
-		}
-	})
+			devTools: !!config.debug
+		},
+		icon: path.join(import.meta.dirname, "icon.png")
+	});
 
 	win.loadFile('index.html')
 
@@ -51,6 +60,8 @@ const createWindow = () => {
 	};
 
 	socket.removeAllListeners();
+
+	ipcMain.on('getAppConfig', function(){win.webContents.send('appConfig', config)});
 
 	// Connection-related events
 	socket.on('connect', function (data) {
@@ -112,7 +123,10 @@ function handleSocketEmit(_event, data) {
 
 app.whenReady().then(() => {
 	ipcMain.on('socketEmit', handleSocketEmit);
-	createWindow()
+	ipcMain.on('copy', function(_, text) {
+		clipboard.writeText(text);
+	});
+	createWindow();
 
 	app.on('activate', () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -120,5 +134,6 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-	if (process.platform !== 'darwin') app.quit()
+	socket.destroy()
+	app.quit()
 })
