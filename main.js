@@ -4,7 +4,7 @@ import io from "socket.io-client";
 
 // Socket
 
-export let socket = await io('wss://www.windows93.net:8086', {
+export let socket = await io('wss://www.windows93.net:8088', {
 	forceNew: true,
 	transportOptions: {
 		polling: {

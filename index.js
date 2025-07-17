@@ -6,6 +6,7 @@ const socketEmit = window.electronAPI.socketEmit;
 
 const rooms = document.getElementById("rooms");
 const chat = document.getElementById("chat");
+const settings = document.getElementById("settings");
 const users = document.getElementById("users");
 const settingsButton = document.getElementById("settingsButton");
 const chatInput = document.getElementById("chatInput");
@@ -41,6 +42,7 @@ function createMessage(timestamp, nick, color, content) {
     message.appendChild(messageContent);
 
     chat.appendChild(message);
+    chat.lastChild.scrollIntoView(true);
 };
 
 function createUser(nick, color, blocked, bot) {
@@ -62,23 +64,36 @@ function createUser(nick, color, blocked, bot) {
 
 
 onSocketReceive(function (event) {
+
     if (event.name === "connect") {
         console.log("Connected");
         socketEmit("user joined", "Ruxvania", "lavender", "", "");
+
     } else if (event.name === "message") {
         const date = DateTime.fromMillis(event.data.date);
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         const parsedContent = he.decode(event.data.msg).replace(/(?:\r\n|\r|\n)/g, '<br>');
         createMessage(timestamp, event.data.nick, event.data.color, parsedContent);
-        chat.lastChild.scrollIntoView(true);
+
+    } else if (event.name === "user joined") {
+        const timestamp = DateTime.now().toLocaleString(DateTime.TIME_SIMPLE);
+        const content = event.data.nick + " joined teh trollbox."
+        createMessage(timestamp, ">", "lime", content);
+
+    } else if (event.name === "user left") {
+        const timestamp = DateTime.now().toLocaleString(DateTime.TIME_SIMPLE);
+        const content = event.data.nick + " left teh trollbox."
+        createMessage(timestamp, "<", "red", content);
+
     } else if (event.name === "update users") {
         users.innerHTML = "";
-        for (let user in event.data) {
-            let userLocation = event.data[user]
-            createUser(userLocation.nick, userLocation.color, false, userLocation.isBot);
+        for (let userLocation in event.data) {
+            let user = event.data[userLocation]
+            createUser(user.nick, user.color, false, user.isBot);
         };
         users.firstChild.classList.add("king");
     };
+
 });
 
 
@@ -103,4 +118,18 @@ function sendChatInput() {
 function clearChatInput() {
     chatInput.value = "";
     chatInput.innerHTML = '';
+};
+
+
+
+settingsButton.addEventListener("click", toggleSettings);
+
+function toggleSettings() {
+    if (settings.classList.contains("hidden")) {
+        settings.classList.remove("hidden");
+        chat.classList.add("hidden");
+    } else {
+        settings.classList.add("hidden");
+        chat.classList.remove("hidden");
+    };
 };
