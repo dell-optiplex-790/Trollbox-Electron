@@ -137,15 +137,15 @@ main {
 }
 
 .king:before {
-    content: "👑";
+    content: "👑 ";
 }
 
 .blocked:before {
-    content: "❌";
+    content: "❌ ";
 }
 
 .king.blocked:before {
-    content: "❌ 👑";
+    content: "❌ 👑 ";
 }
 
 .bot:after {
