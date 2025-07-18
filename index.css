@@ -65,7 +65,8 @@ main {
     width: 60vw;
 }
 
-.chat {
+.chat,
+.settings {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -157,4 +158,8 @@ main {
 
 #settingsButton {
     width: min-content !important;
+}
+
+.hidden {
+    display: none !important;
 }

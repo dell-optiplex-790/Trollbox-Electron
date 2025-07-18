@@ -61,7 +61,9 @@ const createWindow = () => {
 
 	socket.removeAllListeners();
 
-	ipcMain.on('getAppConfig', function(){win.webContents.send('appConfig', config)});
+	ipcMain.on('getAppConfig', function() {
+		win.webContents.send('appConfig', config)
+	});
 
 	// Connection-related events
 	socket.on('connect', function (data) {
