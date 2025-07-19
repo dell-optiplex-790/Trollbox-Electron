@@ -157,3 +157,5 @@ function toggleSettings() {
         chat.classList.remove("hidden");
     };
 };
+
+socketEmit("message", "") // fix for connection without needing to send a msg
