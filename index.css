@@ -111,7 +111,17 @@ main {
     text-align: right;
 }
 
+.message {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-content: flex-start;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
 .messageMetadata {
+    flex-shrink: 0;
     display: inline-block;
     width: 20ch;
     text-wrap: nowrap;
@@ -121,6 +131,7 @@ main {
 .content {
     white-space: pre-wrap;
     display: inline-block;
+    word-break: break-word;
 }
 
 .timestamp,
