@@ -162,6 +162,7 @@ a:hover {
 
 .messageMetadata > .user {
     max-width: 9ch;
+    text-overflow: clip;
 }
 
 .user:hover, .user:hover, .room:hover {
