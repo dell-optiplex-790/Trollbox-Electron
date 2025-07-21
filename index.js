@@ -97,11 +97,6 @@ onSocketReceive(function (event) {
     if (event.name === "connect") {
         console.log("Connected");
         getAppConfig();
-    } else if (event.name === "message") {
-        const date = DateTime.fromMillis(Date.now());
-        const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
-        const parsedContent = he.decode(event.data.msg).replace(/(?:\r\n|\r|\n)/g, '\n');
-        createMessage(timestamp, event.data.nick, event.data.color, event.data.home, parsedContent, event.data.home==='trollbox', false);
     } else if (event.name === "update users") {
         users.innerHTML = "";
         rooms.innerHTML = "";
@@ -126,6 +121,18 @@ onSocketReceive(function (event) {
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         createMessage(timestamp, "<", "tomato", "client",
             createUser(event.data.nick, event.data.color, event.data.home, false, false, true).outerHTML + " has left!", true);
+    } else if (event.name === "user change nick") {
+        const date = DateTime.fromMillis(Date.now());
+        const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
+        createMessage(timestamp, "~", "gold", "client",
+            createUser(event.data[0].nick, event.data[0].color, event.data[1].home, false, false, true).outerHTML +
+            " is now known as " +
+            createUser(event.data[1].nick, event.data[1].color, event.data[1].home, false, false, true).outerHTML + ".", true);
+    } else if (event.name === "message") {
+        const date = DateTime.fromMillis(Date.now());
+        const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
+        const parsedContent = he.decode(event.data.msg).replace(/(?:\r\n|\r|\n)/g, '\n');
+        createMessage(timestamp, event.data.nick, event.data.color, event.data.home, parsedContent, event.data.home==='trollbox', false);
     };
 });
 
