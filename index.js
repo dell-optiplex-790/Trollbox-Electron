@@ -196,8 +196,9 @@ onSocketReceive(function (event) {
 
 
 
-chatInput.addEventListener('keyup', function (event) {
-    if (event.key === 'Enter' && event.shiftKey === false) {
+chatInput.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
         sendChatInput();
         clearChatInput();
     }
