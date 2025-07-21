@@ -36,21 +36,29 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     const message = document.createElement("span");
     message.className = "message";
 
+    const messageMetadata = document.createElement("span");
+    messageMetadata.className = "messageMetadata";
+    message.appendChild(messageMetadata);
+
     const messageTimestamp = document.createElement("span");
     messageTimestamp.className = "timestamp";
     messageTimestamp.innerText = timestamp;
-    message.appendChild(messageTimestamp);
+    messageMetadata.appendChild(messageTimestamp);
 
     const user = createUser(nick, color, home, false, false);
-    message.appendChild(user);
+    messageMetadata.appendChild(user);
+
+    const messageTransition = document.createElement("span");
+    messageMetadata.appendChild(messageTransition);
 
     const messageContent = document.createElement("span");
     messageContent.className = "content";
+    content = he.decode(content);
     if (trusted) {
-        content = " " + he.decode(content);
+        messageTransition.innerText = " "
         messageContent.innerHTML = content;
     } else {
-        content = ": " + he.decode(content);
+        messageTransition.innerText = ": "
         messageContent.innerText = content;
     };
     message.appendChild(messageContent);
