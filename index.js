@@ -8,11 +8,17 @@ const onAppConfig = window.electronAPI.onAppConfig;
 const copy = window.electronAPI.copy;
 window.copy = copy;
 
+DOMPurify.setConfig({
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true
+});
+
 onAppConfig((config) => {
     window.config = config;
     settingsButton.innerText = config.nick;
     socketEmit("user joined", config.nick||"anonymous", config.color||"", "", "");
-})
+});
 
 const rooms = document.getElementById("rooms");
 const chat = document.getElementById("chat");
@@ -72,7 +78,7 @@ function createUser(nick, color, home, blocked, bot) {
     user.style.fontWeight = "bold";
     user.className = "user";
     const bdiWrapper = document.createElement("bdi");
-    bdiWrapper.innerText = he.decode(nick);
+    bdiWrapper.innerText = DOMPurify.sanitize(he.decode(nick));
     bdiWrapper.title = home;
     bdiWrapper.addEventListener('click', (event) => {
         copy(event.target.title);
