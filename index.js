@@ -8,12 +8,6 @@ const onAppConfig = window.electronAPI.onAppConfig;
 const copy = window.electronAPI.copy;
 window.copy = copy;
 
-DOMPurify.setConfig({
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-    KEEP_CONTENT: true
-});
-
 onAppConfig((config) => {
     window.config = config;
     settingsButton.innerText = config.nick;
@@ -27,6 +21,14 @@ const users = document.getElementById("users");
 const settingsButton = document.getElementById("settingsButton");
 const chatInput = document.getElementById("chatInput");
 const sendButton = document.getElementById("sendButton");
+
+function createLinks(string) {
+    string = string.replace(
+        /\bhttps?:\/\/[^\s<]+/gi,
+        (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
+    return string;
+};
 
 function createRoom(name) {
     const room = document.createElement("span");
@@ -61,12 +63,17 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     messageContent.className = "content";
     content = he.decode(content);
     if (trusted) {
-        messageTransition.innerText = " "
-        messageContent.innerHTML = content;
+        messageTransition.innerText = " ";
+        content = createLinks(content);
     } else {
         messageTransition.innerText = ": "
-        messageContent.innerText = content;
+        content = createLinks(DOMPurify.sanitize(content, {
+            ALLOWED_TAGS: [],
+            ALLOWED_ATTR: [],
+            KEEP_CONTENT: true
+        }));
     };
+    messageContent.innerHTML = content;
     message.appendChild(messageContent);
 
     chat.appendChild(message);
@@ -78,7 +85,11 @@ function createUser(nick, color, home, blocked, bot) {
     user.style.fontWeight = "bold";
     user.className = "user";
     const bdiWrapper = document.createElement("bdi");
-    bdiWrapper.innerText = DOMPurify.sanitize(he.decode(nick));
+    bdiWrapper.innerText = DOMPurify.sanitize(he.decode(nick), {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+        KEEP_CONTENT: true
+});
     bdiWrapper.title = home;
     bdiWrapper.addEventListener('click', (event) => {
         copy(event.target.title);

@@ -34,6 +34,14 @@ main {
     align-items: stretch;
 }
 
+a {
+    color: gold;
+}
+
+a:hover {
+    color: white;
+}
+
 .rooms,
 .users {
     display: flex;

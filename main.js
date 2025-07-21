@@ -1,9 +1,8 @@
-import { app, BrowserWindow, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, clipboard, shell } from 'electron';
 import path from 'node:path';
 import io from "socket.io-client";
 import fs from 'fs';
 import { join } from 'path';
-import { clipboard } from 'electron';
 
 // Socket
 
@@ -48,6 +47,11 @@ const createWindow = () => {
 			devTools: !!config.debug
 		},
 		icon: path.join(import.meta.dirname, "icon.png")
+	});
+
+	win.webContents.setWindowOpenHandler(({ url }) => {
+		shell.openExternal(url);
+		return { action: 'deny' };
 	});
 
 	win.loadFile('index.html')
