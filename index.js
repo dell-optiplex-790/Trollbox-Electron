@@ -53,7 +53,7 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     messageTimestamp.innerText = timestamp;
     messageMetadata.appendChild(messageTimestamp);
 
-    const user = createUser(nick, color, home, false, false);
+    const user = createUser(nick, color, home, false, false, trusted);
     messageMetadata.appendChild(user);
 
     const messageTransition = document.createElement("span");
@@ -80,16 +80,22 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     chat.lastChild.scrollIntoView(true);
 };
 
-function createUser(nick, color, home, blocked, bot) {
+function createUser(nick, color, home, blocked, bot, trusted) {
     const user = document.createElement("span");
     user.style.fontWeight = "bold";
     user.className = "user";
     const bdiWrapper = document.createElement("bdi");
-    bdiWrapper.innerText = DOMPurify.sanitize(he.decode(nick), {
-        ALLOWED_TAGS: [],
-        ALLOWED_ATTR: [],
-        KEEP_CONTENT: true
-});
+    if (trusted) {
+        nick = he.decode(nick);
+    } else {
+        nick = DOMPurify.sanitize(he.decode(nick), {
+            ALLOWED_TAGS: [],
+            ALLOWED_ATTR: [],
+            KEEP_CONTENT: true
+        });
+    };
+    bdiWrapper.innerText = nick;
+
     bdiWrapper.title = home;
     bdiWrapper.addEventListener('click', (event) => {
         copy(event.target.title);
@@ -120,7 +126,7 @@ onSocketReceive(function (event) {
         let roomsList = [];
         for (let user in event.data) {
             let userLocation = event.data[user]
-            let createdUser = createUser(userLocation.nick, userLocation.color, userLocation.home, false, userLocation.isBot);
+            let createdUser = createUser(userLocation.nick, userLocation.color, userLocation.home, false, userLocation.isBot, false);
             users.appendChild(createdUser);
             if(!roomsList.includes(userLocation.room)) {
                 roomsList.push(userLocation.room);
@@ -132,19 +138,19 @@ onSocketReceive(function (event) {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         createMessage(timestamp, ">", "lightgreen", "client",
-            createUser(event.data.nick, event.data.color, event.data.home, false, false, true).outerHTML + " has joined!", true);
+            createUser(event.data.nick, event.data.color, event.data.home, false, false, false).outerHTML + " has joined!", true);
     } else if (event.name === "user left") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         createMessage(timestamp, "<", "tomato", "client",
-            createUser(event.data.nick, event.data.color, event.data.home, false, false, true).outerHTML + " has left!", true);
+            createUser(event.data.nick, event.data.color, event.data.home, false, false, false).outerHTML + " has left!", true);
     } else if (event.name === "user change nick") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         createMessage(timestamp, "~", "gold", "client",
-            createUser(event.data[0].nick, event.data[0].color, event.data[1].home, false, false, true).outerHTML +
+            createUser(event.data[0].nick, event.data[0].color, event.data[1].home, false, false, false).outerHTML +
             " is now known as " +
-            createUser(event.data[1].nick, event.data[1].color, event.data[1].home, false, false, true).outerHTML + ".", true);
+            createUser(event.data[1].nick, event.data[1].color, event.data[1].home, false, false, false).outerHTML + ".", true);
     } else if (event.name === "message") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
