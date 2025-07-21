@@ -94,6 +94,15 @@ function createUser(nick, color, home, blocked, bot, trusted) {
             KEEP_CONTENT: true
         });
     };
+    const invisibleRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF]*$/;
+    const leadingTrailingWhitespaceRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF]+|[\s\u200B\u200C\u200D\u2060\uFEFF]+$/g;
+    const allVisibleWhitespaceGroupsRegex = /[\t\n\r\f\v\u00A0 ]+/g;
+    if (invisibleRegex.test(nick)) {
+        nick = "anonymous";
+    } else {
+        nick = nick.replace(leadingTrailingWhitespaceRegex, "")
+        .replace(allVisibleWhitespaceGroupsRegex, " ");
+    };
     bdiWrapper.innerText = nick;
 
     bdiWrapper.title = home;
@@ -101,9 +110,11 @@ function createUser(nick, color, home, blocked, bot, trusted) {
         copy(event.target.title);
     })
     user.appendChild(bdiWrapper);
-    if (color) {
-        user.style = "color: " + color + ";";
-    };
+    if (color && !isCssColorInvisible(color)) {
+        user.style = "color: white; color: " + color + ";";
+    } else {
+        user.style = "color: white;";
+    }
     if (blocked) {
         user.classList.add("blocked");
     };
@@ -114,12 +125,32 @@ function createUser(nick, color, home, blocked, bot, trusted) {
     return user;
 };
 
+function isCssColorInvisible(color) {
+    const testElement = document.createElement("span");
+    testElement.style.color = color;
+    testElement.style.display = "none"; // avoid flashing
+    document.body.appendChild(testElement);
+
+    const computed = getComputedStyle(testElement).color;
+    document.body.removeChild(testElement);
+
+    // Check for transparency
+    if (computed === "transparent" || computed === "rgba(0, 0, 0, 0)") {
+        return true;
+    }
+
+    // Check for background color
+    const bg = getComputedStyle(document.body).backgroundColor;
+    return computed === bg;
+}
+
 
 
 onSocketReceive(function (event) {
     if (event.name === "connect") {
         console.log("Connected");
         getAppConfig();
+
     } else if (event.name === "update users") {
         users.innerHTML = "";
         rooms.innerHTML = "";
@@ -134,16 +165,19 @@ onSocketReceive(function (event) {
             }
         };
         users.firstChild.classList.add("king");
+
     } else if (event.name === "user joined") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         createMessage(timestamp, ">", "lightgreen", "client",
             createUser(event.data.nick, event.data.color, event.data.home, false, false, false).outerHTML + " has joined!", true);
+
     } else if (event.name === "user left") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
         createMessage(timestamp, "<", "tomato", "client",
             createUser(event.data.nick, event.data.color, event.data.home, false, false, false).outerHTML + " has left!", true);
+
     } else if (event.name === "user change nick") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
@@ -151,6 +185,7 @@ onSocketReceive(function (event) {
             createUser(event.data[0].nick, event.data[0].color, event.data[1].home, false, false, false).outerHTML +
             " is now known as " +
             createUser(event.data[1].nick, event.data[1].color, event.data[1].home, false, false, false).outerHTML + ".", true);
+
     } else if (event.name === "message") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
