@@ -97,9 +97,8 @@ function createUser(nick, color, home, blocked, bot, trusted) {
             ALLOWED_TAGS: [],
             ALLOWED_ATTR: [],
             KEEP_CONTENT: true
-        });
-    };
-    const invisibleRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF]*$/;
+        })};
+    const invisibleRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF\u200E]*$/;
     const leadingTrailingWhitespaceRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF]+|[\s\u200B\u200C\u200D\u2060\uFEFF]+$/g;
     const allVisibleWhitespaceGroupsRegex = /[\t\n\r\f\v\u00A0 ]+/g;
     if (invisibleRegex.test(nick)) {
@@ -237,4 +236,4 @@ function toggleSettings() {
     };
 };
 
-socketEmit("message", "") // fix for connection without needing to send a msg
+socketEmit("message", ""); // fix for connection without needing to send a msg
