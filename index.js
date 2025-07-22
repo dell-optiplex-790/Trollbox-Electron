@@ -76,7 +76,7 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     messageContent.innerHTML = content;
     message.appendChild(messageContent);
 
-    const MAX_MESSAGES = 1000;
+    const MAX_MESSAGES = 250;
     while (chat.children.length >= MAX_MESSAGES) {
         chat.removeChild(chat.firstChild);
     }
