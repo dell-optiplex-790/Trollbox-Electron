@@ -32,7 +32,7 @@ var config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json')
 // Electron things
 
 if(!config.debug) {
-	await Menu.setApplicationMenu(null);
+	Menu.setApplicationMenu(null);
 }
 
 const createWindow = () => {
@@ -65,8 +65,8 @@ const createWindow = () => {
 
 	socket.removeAllListeners();
 
-	ipcMain.on('getAppConfig', function() {
-		win.webContents.send('appConfig', config)
+	ipcMain.on('getConfig', function() {
+		win.webContents.send("recieveConfig", config);
 	});
 
 	// Connection-related events
@@ -129,7 +129,7 @@ function handleSocketEmit(_event, data) {
 
 app.whenReady().then(() => {
 	ipcMain.on('socketEmit', handleSocketEmit);
-	ipcMain.on('copy', function(_, text) {
+	ipcMain.on('copy', function(_event, text) {
 		clipboard.writeText(text);
 	});
 	createWindow();
@@ -137,9 +137,18 @@ app.whenReady().then(() => {
 	app.on('activate', () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	})
-})
+});
 
 app.on('window-all-closed', () => {
 	socket.destroy()
 	app.quit()
-})
+});
+
+ipcMain.on('writeConfig', (_event, newConfig) => {
+    try {
+        fs.writeFileSync(join(import.meta.dirname, 'config.json'), JSON.stringify(newConfig, null, 2), 'utf8');
+        console.log("Config updated.");
+    } catch (error) {
+        console.error("Failed to write config: ", error);
+    }
+});

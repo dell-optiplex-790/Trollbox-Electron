@@ -20,24 +20,32 @@
 			</div>
 			<div class="settings hidden" id="settings">
 				<p>
-				<form>
+				<form id="nicknameForm">
 					<label for="nicknameInput">Nickname</label><br>
 					<input type="text" id="nicknameInput" name="nicknameInput"><br>
-					<input type="submit" value="Save">
 				</form>
 				</p>
 				<p>
-				<form>
-					<label for="colorInput">Color</label><br>
-					<input type="text" id="colorInput" name="colorInput"><br>
-					<input type="submit" value="Save">
+				<form id="colorForm">
+					<label for="colorInputPicker">Color</label><br>
+					<input type="color" id="colorInputPicker" name="colorInputPicker">
+					<input type="text" id="colorInputText" name="colorInputText"><br>
 				</form>
 				</p>
 				<p>
-				<form>
+				<form id="blockForm">
 					<label for="blockInput">Blocks</label><br>
 					<textarea name="blockInput" id="blockInput"></textarea><br>
-					<input type="submit" value="Save">
+				</form>
+				</p>
+				<p>
+				<form id="checkboxForm">
+					<input type="checkbox" id="embedImagesInput" name="embedImagesInput" value="embedImages">
+					<label for="embedImagesInput">Embed Images</label><br>
+					<input type="checkbox" id="embedYoutubeInput" name="embedYoutubeInput" value="embedYoutube">
+					<label for="embedYoutubeInput">Embed Youtube Videos</label><br>
+					<input type="checkbox" id="debugInput" name="debugInput" value="debug">
+					<label for="debugInput">Menu Bar and Inspect Element (Applies on Restart)</label><br>
 				</form>
 				</p>
 			</div>
