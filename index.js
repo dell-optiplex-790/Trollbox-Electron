@@ -364,6 +364,14 @@ optionInput.colorInputPicker.addEventListener("input", function () {
     optionInput.colorInputText.value = value;
 });
 
+optionInput.colorInputText.addEventListener("change", function () {
+    const value = optionInput.colorInputText.value;
+    optionInput.colorInputPicker.value = cssColor.toComputedHex(value);
+    config.color = value;
+    applyConfig();
+    writeConfig(config);
+});
+
 optionInput.embedImagesInput.addEventListener("change", function () {
     const value = optionInput.embedImagesInput.checked;
     config.embedImages = value;
