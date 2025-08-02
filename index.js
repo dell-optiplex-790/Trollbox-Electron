@@ -28,6 +28,7 @@ const optionInput = {
     embedImagesInput: document.getElementById("embedImagesInput"),
     embedYoutubeInput: document.getElementById("embedYoutubeInput"),
     debugInput: document.getElementById("debugInput"),
+    reloadConfigInput: document.getElementById("reloadConfigInput"),
 };
 
 // class User {
@@ -450,6 +451,10 @@ optionInput.debugInput.addEventListener("change", function () {
     config.debug = value;
     applyConfig();
     writeConfig(config);
+});
+
+optionInput.reloadConfigInput.addEventListener("click", function () {
+    getConfig();
 });
 
 // Configuration

@@ -26,8 +26,7 @@ export let socket = await io('ws://www.windows93.net:8081', {
 	}
 });
 
-var config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json'), 'utf8'));
-
+let config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json'), 'utf8'));
 
 // Electron things
 
@@ -66,6 +65,7 @@ const createWindow = () => {
 	socket.removeAllListeners();
 
 	ipcMain.on('getConfig', function() {
+		config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json'), 'utf8'));
 		win.webContents.send("recieveConfig", config);
 	});
 
