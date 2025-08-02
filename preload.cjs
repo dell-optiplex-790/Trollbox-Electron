@@ -20,6 +20,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.send('writeConfig', newConfig);
 		console.log("writeConfig");
     },
+	reloadConfig: () => {
+		ipcRenderer.send('reloadConfig');
+	},
 	copy: function(text) {
 		ipcRenderer.send('copy', text);
 	},

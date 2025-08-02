@@ -152,3 +152,8 @@ ipcMain.on('writeConfig', (_event, newConfig) => {
         console.error("Failed to write config: ", error);
     }
 });
+
+ipcMain.on('reloadConfig', () => {
+	config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json'), 'utf8'));
+	win.webContents.send("recieveConfig", config);
+})
