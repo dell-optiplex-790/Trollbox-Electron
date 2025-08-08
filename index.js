@@ -154,7 +154,8 @@ function createUser(nick, color, home, bot, trusted) {
             ALLOWED_TAGS: [],
             ALLOWED_ATTR: [],
             KEEP_CONTENT: true
-        })};
+        })
+    };
     const invisibleRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF\u200E]*$/;
     const leadingTrailingWhitespaceRegex = /^[\s\u200B\u200C\u200D\u2060\uFEFF]+|[\s\u200B\u200C\u200D\u2060\uFEFF]+$/g;
     const allVisibleWhitespaceGroupsRegex = /[\t\n\r\f\v\u00A0 ]+/g;
@@ -162,11 +163,11 @@ function createUser(nick, color, home, bot, trusted) {
         nick = "anonymous";
     } else {
         nick = nick.replace(leadingTrailingWhitespaceRegex, "")
-        .replace(allVisibleWhitespaceGroupsRegex, " ");
+            .replace(allVisibleWhitespaceGroupsRegex, " ");
     };
     bdiWrapper.innerText = nick;
     bdiWrapper.title = home;
-    
+
     bdiWrapper.addEventListener('click', (event) => {
         copy(event.target.title);
     })
@@ -193,7 +194,7 @@ function createUser(nick, color, home, bot, trusted) {
     } else {
         user.style = "color: white;";
     };
-    if (config.blocks.some(block => block.home === home)) {
+    if (isHomeBlocked(home)) {
         user.classList.add("blocked");
     };
     if (bot) {
@@ -203,7 +204,11 @@ function createUser(nick, color, home, bot, trusted) {
     return user;
 };
 
-function createBlockOption (block) {
+function isHomeBlocked(home) {
+    return config.blocks.some(block => block.home === home);
+};
+
+function createBlockOption(block) {
     const blockOption = document.createElement("span");
     blockOption.classList.add("blockOption");
     const blockRemoveButton = document.createElement("button");
@@ -519,7 +524,7 @@ socketReceive(function (event) {
             const userLocation = event.data[user]
             const createdUser = createUser(userLocation.nick, userLocation.color, userLocation.home, userLocation.isBot, false);
             users.appendChild(createdUser);
-            if(!roomsList.includes(userLocation.room)) {
+            if (!roomsList.includes(userLocation.room)) {
                 roomsList.push(userLocation.room);
                 createRoom(userLocation.room);
             }
@@ -529,17 +534,19 @@ socketReceive(function (event) {
     } else if (event.name === "user joined") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
-        createMessage(timestamp, ">", "lightgreen", "client",
-            createUser(event.data.nick, event.data.color, event.data.home, false, false).outerHTML + " has joined!", true);
-
+        if (!isHomeBlocked(event.data.home)) {
+            createMessage(timestamp, ">", "lightgreen", "client",
+                createUser(event.data.nick, event.data.color, event.data.home, false, false).outerHTML + " has joined!", true);
+        };
     } else if (event.name === "user left") {
         const date = DateTime.fromMillis(Date.now());
         const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
-        createMessage(timestamp, "<", "tomato", "client",
-            createUser(event.data.nick, event.data.color, event.data.home, false, false).outerHTML + " has left!", true);
-
+        if (!isHomeBlocked(event.data.home)) {
+            createMessage(timestamp, "<", "tomato", "client",
+                createUser(event.data.nick, event.data.color, event.data.home, false, false).outerHTML + " has left!", true);
+        };
     } else if (event.name === "user change nick") {
-        if (event.data[0].nick !== event.data[1].nick) {
+        if (event.data[0].nick !== event.data[1].nick && !isHomeBlocked(event.data.home)) {
             const date = DateTime.fromMillis(Date.now());
             const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
             createMessage(timestamp, "~", "gold", "client",
@@ -563,7 +570,7 @@ function socketUserJoin() {
 };
 
 function socketReconnect() {
-    socketEmit("message", ""); 
+    socketEmit("message", "");
 };
 
 socketReconnect();
