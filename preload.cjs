@@ -23,4 +23,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	copy: function(text) {
 		ipcRenderer.send('copy', text);
 	},
+	writeToLog: function(entry) {
+		ipcRenderer.send('log', entry);
+	}
 });

@@ -131,3 +131,5 @@ dist
 
 # Application configuration file
 config.json
+activity.log
+activity.json
