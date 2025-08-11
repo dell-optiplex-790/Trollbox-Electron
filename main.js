@@ -28,6 +28,13 @@ export let socket = await io('ws://www.windows93.net:8081', {
 
 let config = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'config.json'), 'utf8'));
 
+if(!fs.existsSync(join(import.meta.dirname, 'activity.log'))) {
+	fs.writeFileSync(join(import.meta.dirname, 'activity.log'), '=========== BEGIN LOG ==============', 'utf8'); // create the file
+}
+if(!fs.existsSync(join(import.meta.dirname, 'activity.json'))) {
+	fs.writeFileSync(join(import.meta.dirname, 'activity.json'), '[]', 'utf8'); // create the file
+}
+
 // Electron things
 
 if(!config.debug) {
@@ -152,3 +159,31 @@ ipcMain.on('writeConfig', (_event, newConfig) => {
         console.error("Failed to write config: ", error);
     }
 });
+
+ipcMain.on('log', (_event, log) => {
+	var _log = log;
+	const logKeys = "nick;color;home;content;trusted".split(";")
+	for(let i = 0; i < logKeys.length; i++) {
+		if(typeof log[logKeys[i]] === "undefined") {return;}
+		_log[logKeys[i]] = log[logKeys[i]].toString();
+	}
+	var date = new Date(Date.now())
+	let activityJSON = JSON.parse(fs.readFileSync(join(import.meta.dirname, 'activity.json'), 'utf8'))
+	activityJSON.push(_log);
+	let logEntry = "";
+	logEntry += date.toLocaleString("en-US") + "\t" // add date/time
+	logEntry += "[color = " + _log.color.split(';')[0] + ", home = " + _log.home + "]\t" // add additional info
+	if(log.trusted) { // nick logic
+		logEntry += _log.nick + "\t"
+	} else {
+		logEntry += "[" + _log.nick + "]\t"
+	}
+	logEntry += _log.content // add message content
+	try {
+        fs.writeFileSync(join(import.meta.dirname, 'activity.log'), fs.readFileSync(join(import.meta.dirname, 'activity.log'), 'utf8') + '\n' + logEntry, 'utf8');
+		fs.writeFileSync(join(import.meta.dirname, 'activity.json'), JSON.stringify(activityJSON), 'utf8');
+        console.log("Activity log updated.");
+    } catch (error) {
+        console.error("Failed to write to activity log: ", error);
+    }
+})
