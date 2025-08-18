@@ -7,7 +7,7 @@ const getConfig = window.electronAPI.getConfig;
 const recieveConfig = window.electronAPI.recieveConfig;
 const writeConfig = window.electronAPI.writeConfig;
 const copy = window.electronAPI.copy;
-const writeToLog = window.electronAPI.writeToLog;
+const writeLog = window.electronAPI.writeLog;
 
 const roomPanel = document.getElementById("rooms");
 const chatPanel = document.getElementById("chat");
@@ -99,7 +99,7 @@ function createRoom(name) {
 };
 
 function createMessage(timestamp, nick, color, home, content, trusted) {
-    writeToLog({timestamp: Date.now(), nick, color, home, content, trusted})
+    writeLog({timestamp: Date.now(), nick, color, home, content, trusted})
     const message = document.createElement("span");
     message.className = "message";
 
