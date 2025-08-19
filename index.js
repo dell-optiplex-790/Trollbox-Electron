@@ -24,7 +24,7 @@ const optionInput = {
     colorInputPicker: document.getElementById("colorInputPicker"),
     colorInputText: document.getElementById("colorInputText"),
     blockForm: document.getElementById("blockForm"),
-    blockInput: document.getElementById("blockInput"),
+    blockInputAdd: document.getElementById("blockInputAdd"),
     checkboxForm: document.getElementById("checkboxForm"),
     embedImagesInput: document.getElementById("embedImagesInput"),
     embedYoutubeInput: document.getElementById("embedYoutubeInput"),
@@ -214,10 +214,12 @@ function createBlockOption(block) {
     const blockOption = document.createElement("span");
     blockOption.classList.add("blockOption");
     const blockRemoveButton = document.createElement("button");
+    blockRemoveButton.type = "button";
     blockRemoveButton.innerText = "-";
     blockRemoveButton.classList.add("blockInputRemove");
     blockRemoveButton.addEventListener("click", function (event) {
-
+        this.parentElement.remove();
+        parseBlockSettings();
     });
     blockOption.appendChild(blockRemoveButton);
     const blockInputHome = document.createElement("input");
@@ -225,7 +227,7 @@ function createBlockOption(block) {
     blockInputHome.name = "blockInputHome";
     blockInputHome.classList.add("blockInputHome");
     blockInputHome.addEventListener("change", function (event) {
-
+        parseBlockSettings();
     });
     if (block.home) {
         blockInputHome.value = block.home;
@@ -236,7 +238,7 @@ function createBlockOption(block) {
     blockInputComment.name = "blockInputComment";
     blockInputComment.classList.add("blockInputComment");
     blockInputComment.addEventListener("change", function (event) {
-
+        parseBlockSettings();
     });
     if (block.comment) {
         blockInputComment.value = block.comment;
@@ -439,6 +441,11 @@ optionInput.colorInputText.addEventListener("change", function () {
     writeConfig(config);
 });
 
+optionInput.blockInputAdd.addEventListener("click", function (event) {
+    createBlockOption(new Block("", ""));
+    parseBlockSettings();
+});
+
 optionInput.embedImagesInput.addEventListener("change", function () {
     const value = optionInput.embedImagesInput.checked;
     config.embedImages = value;
@@ -482,7 +489,10 @@ recieveConfig((recievedConfig) => {
     console.log("recieveConfig");
 });
 
+// Read settings page to store the user's changes, and apply it in the app and trollbox
 function applyConfig() {
+
+    // Store all settings besides blocks to config
     settingsButton.innerText = config.nick;
     optionInput.nicknameInput.value = config.nick;
     optionInput.colorInputText.value = config.color;
@@ -491,13 +501,17 @@ function applyConfig() {
     optionInput.embedYoutubeInput.checked = config.embedYoutube;
     optionInput.debugInput.checked = config.debug;
 
+    // Remove block config rows except the block add button
     while (optionInput.blockForm.children.length > 1) {
         optionInput.blockForm.removeChild(optionInput.blockForm.firstElementChild);
     };
+
+    // Populate the block config with blocks from the config
     for (const block of config.blocks) {
         createBlockOption(block);
     };
-
+    
+    // If the user's nickname or color was changed, update it on trollbox
     if (currentNick !== config.nick ||
         currentColor !== config.color
     ) {
@@ -507,6 +521,25 @@ function applyConfig() {
     };
 
     console.log("applyConfig");
+};
+
+// Parse block settings and store them to config
+function parseBlockSettings () {
+    // Get each block entry
+    const blockOptionArray = Array.from(optionInput.blockForm.children).filter(function (child) {
+        return child.classList.contains('blockOption');
+    });
+    // Clear block config
+    config.blocks.length = 0;
+    // Store block entries to config
+    for (let block of blockOptionArray) {
+        const home = block.querySelector('.blockInputHome').value;
+        const comment = block.querySelector('.blockInputComment').value;
+        config.blocks.push(new Block(home, comment));
+    };
+
+    applyConfig();
+    writeConfig(config);
 };
 
 // Socket
