@@ -80,11 +80,46 @@ let initialConfigRecieve = false;
 let currentNick = "";
 let currentColor = "";
 
-function createLinks(string) {
-    string = string.replace(
-        /\bhttps?:\/\/[^\s<]+/gi,
-        (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-    );
+function createEmbeds(string) {
+    string = string.replace(/\bhttps?:\/\/[^\s<]+/gi, function (url) {
+        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|avif|apng)(\?.*)?$/i.test(url);
+        const isYoutube = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/.test(url);
+        if (config.embedYoutube && isYoutube) {
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/);
+            const videoId = match ? match[1] : null;
+            if (videoId) {
+                return `
+                    <iframe
+                        width="560"
+                        height="315"
+                        src="https://www.youtube.com/embed/${videoId}"
+                        title="YouTube video"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                `;
+            } else {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            };
+        } else if (config.embedImages && isImage) {
+            return `<img src="${url}" alt="Embedded Image">`;
+        } else {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        };
+    });
+    return string;
+};
+
+function createImages(string) {
+    string = string.replace(/\bhttps?:\/\/[^\s<]+/gi, function (url) {
+        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|avif|apng)(\?.*)?$/i.test(url);
+        if (isImage) {
+            return `<img src="${url}" alt="Embedded Image">`;
+        } else {
+            return url;
+        };
+    });
     return string;
 };
 
@@ -123,10 +158,10 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     content = he.decode(content);
     if (trusted) {
         messageTransition.innerText = " ";
-        content = createLinks(content);
+        content = createEmbeds(content);
     } else {
         messageTransition.innerText = ": "
-        content = createLinks(DOMPurify.sanitize(content, {
+        content = createEmbeds(DOMPurify.sanitize(content, {
             ALLOWED_TAGS: [],
             ALLOWED_ATTR: [],
             KEEP_CONTENT: true
