@@ -169,7 +169,7 @@ app.on('window-all-closed', () => {
 	app.quit()
 });
 
-ipcMain.on('writeConfig', (_event, newConfig) => {
+ipcMain.on('writeConfig', async function(_event, newConfig) {
     try {
         fs.writeFileSync(join(__dirname, 'config.json'), JSON.stringify(newConfig, null, 2), 'utf8');
         console.log("Config updated.");
@@ -178,7 +178,7 @@ ipcMain.on('writeConfig', (_event, newConfig) => {
     }
 });
 
-ipcMain.on('log', (_event, log) => {
+ipcMain.on('log', async function (_event, log) {
 	var _log = log;
 	const logKeys = "nick;color;home;content;trusted".split(";")
 	for(let i = 0; i < logKeys.length; i++) {

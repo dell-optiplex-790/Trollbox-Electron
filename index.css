@@ -136,6 +136,10 @@ a:hover {
     vertical-align: top;
 }
 
+.chat img {
+    width: 100%;
+}
+
 .content {
     white-space: pre-wrap;
     display: inline-block;
