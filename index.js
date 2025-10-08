@@ -7,7 +7,7 @@ const getConfig = window.electronAPI.getConfig;
 const recieveConfig = window.electronAPI.recieveConfig;
 const writeConfig = window.electronAPI.writeConfig;
 const copy = window.electronAPI.copy;
-const writeLog = window.electronAPI.writeLog;
+const writeToLog = window.electronAPI.writeToLog;
 
 const roomPanel = document.getElementById("rooms");
 const chatPanel = document.getElementById("chat");
@@ -24,13 +24,20 @@ const optionInput = {
     colorInputPicker: document.getElementById("colorInputPicker"),
     colorInputText: document.getElementById("colorInputText"),
     blockForm: document.getElementById("blockForm"),
-    blockInputAdd: document.getElementById("blockInputAdd"),
+    blockInput: document.getElementById("blockInput"),
     checkboxForm: document.getElementById("checkboxForm"),
     embedImagesInput: document.getElementById("embedImagesInput"),
     embedYoutubeInput: document.getElementById("embedYoutubeInput"),
     debugInput: document.getElementById("debugInput"),
+    serverInput: document.getElementById("serverInput"),
+    serverInputContainer: document.getElementById("serverContainer"),
     reloadConfigInput: document.getElementById("reloadConfigInput"),
+    restoreServer: document.getElementById("restoreServer")
 };
+
+if(electronAPI.recieveConfig_callback && electronAPI.socketRecieve_callback) { // this is definetely running under dell's duct-tape browser fix
+    optionInput.serverInputContainer.style.display = 'none'; // compensate for that
+}
 
 // class User {
 //     constructor(nick, home, color, blocked, joinDate, trusted) {
@@ -60,14 +67,15 @@ class Block {
 };
 
 class Config {
-    constructor(nick, color, blocks, embedImages, embedYoutube, font, debug) {
+    constructor(nick, color, blocks, embedImages, embedYoutube, font, debug, server) {
         this.nick = nick ?? "anonymous";
         this.color = color ?? "white";
         this.blocks = blocks ?? [];
         this.embedImages = embedImages ?? false;
         this.embedYoutube = embedYoutube ?? false;
         this.font = font ?? undefined;
-        this.debug = debug ?? false
+        this.debug = debug ?? false;
+        this.server = server ?? 'ws://www.windows93.net:8081'
     };
 };
 
@@ -80,46 +88,11 @@ let initialConfigRecieve = false;
 let currentNick = "";
 let currentColor = "";
 
-function createEmbeds(string) {
-    string = string.replace(/\bhttps?:\/\/[^\s<]+/gi, function (url) {
-        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|avif|apng)(\?.*)?$/i.test(url);
-        const isYoutube = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/.test(url);
-        if (config.embedYoutube && isYoutube) {
-            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/);
-            const videoId = match ? match[1] : null;
-            if (videoId) {
-                return `
-                    <iframe
-                        width="560"
-                        height="315"
-                        src="https://www.youtube.com/embed/${videoId}"
-                        title="YouTube video"
-                        frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen
-                    ></iframe>
-                `;
-            } else {
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-            };
-        } else if (config.embedImages && isImage) {
-            return `<img src="${url}" alt="Embedded Image">`;
-        } else {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-        };
-    });
-    return string;
-};
-
-function createImages(string) {
-    string = string.replace(/\bhttps?:\/\/[^\s<]+/gi, function (url) {
-        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|avif|apng)(\?.*)?$/i.test(url);
-        if (isImage) {
-            return `<img src="${url}" alt="Embedded Image">`;
-        } else {
-            return url;
-        };
-    });
+function createLinks(string) {
+    string = string.replace(
+        /\bhttps?:\/\/[^\s<]+/gi,
+        (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
     return string;
 };
 
@@ -134,7 +107,7 @@ function createRoom(name) {
 };
 
 function createMessage(timestamp, nick, color, home, content, trusted) {
-    writeLog({timestamp: Date.now(), nick, color, home, content, trusted})
+    writeToLog({timestamp: Date.now(), nick, color, home, content, trusted})
     const message = document.createElement("span");
     message.className = "message";
 
@@ -158,10 +131,10 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     content = he.decode(content);
     if (trusted) {
         messageTransition.innerText = " ";
-        content = createEmbeds(content);
+        content = createLinks(content);
     } else {
         messageTransition.innerText = ": "
-        content = createEmbeds(DOMPurify.sanitize(content, {
+        content = createLinks(DOMPurify.sanitize(content, {
             ALLOWED_TAGS: [],
             ALLOWED_ATTR: [],
             KEEP_CONTENT: true
@@ -249,12 +222,10 @@ function createBlockOption(block) {
     const blockOption = document.createElement("span");
     blockOption.classList.add("blockOption");
     const blockRemoveButton = document.createElement("button");
-    blockRemoveButton.type = "button";
     blockRemoveButton.innerText = "-";
     blockRemoveButton.classList.add("blockInputRemove");
     blockRemoveButton.addEventListener("click", function (event) {
-        this.parentElement.remove();
-        parseBlockSettings();
+
     });
     blockOption.appendChild(blockRemoveButton);
     const blockInputHome = document.createElement("input");
@@ -262,7 +233,7 @@ function createBlockOption(block) {
     blockInputHome.name = "blockInputHome";
     blockInputHome.classList.add("blockInputHome");
     blockInputHome.addEventListener("change", function (event) {
-        parseBlockSettings();
+
     });
     if (block.home) {
         blockInputHome.value = block.home;
@@ -273,7 +244,7 @@ function createBlockOption(block) {
     blockInputComment.name = "blockInputComment";
     blockInputComment.classList.add("blockInputComment");
     blockInputComment.addEventListener("change", function (event) {
-        parseBlockSettings();
+
     });
     if (block.comment) {
         blockInputComment.value = block.comment;
@@ -476,11 +447,6 @@ optionInput.colorInputText.addEventListener("change", function () {
     writeConfig(config);
 });
 
-optionInput.blockInputAdd.addEventListener("click", function (event) {
-    createBlockOption(new Block("", ""));
-    parseBlockSettings();
-});
-
 optionInput.embedImagesInput.addEventListener("change", function () {
     const value = optionInput.embedImagesInput.checked;
     config.embedImages = value;
@@ -502,6 +468,19 @@ optionInput.debugInput.addEventListener("change", function () {
     writeConfig(config);
 });
 
+optionInput.serverInput.addEventListener("change", function () {
+    const value = optionInput.serverInput.value;
+    config.server = value;
+    applyConfig();
+    writeConfig(config);
+});
+
+optionInput.restoreServer.addEventListener("click", function () {
+    config.server = "ws://www.windows93.net:8081";
+    applyConfig();
+    writeConfig(config);
+});
+
 optionInput.reloadConfigInput.addEventListener("click", function () {
     getConfig();
 });
@@ -517,6 +496,7 @@ recieveConfig((recievedConfig) => {
     config.embedYoutube = recievedConfig.embedYoutube ?? false;
     config.font = recievedConfig.font;
     config.debug = recievedConfig.debug;
+    config.server = recievedConfig.server;
     applyConfig();
     if (!initialConfigRecieve) {
         initialConfigRecieve = true;
@@ -524,10 +504,7 @@ recieveConfig((recievedConfig) => {
     console.log("recieveConfig");
 });
 
-// Read settings page to store the user's changes, and apply it in the app and trollbox
 function applyConfig() {
-
-    // Store all settings besides blocks to config
     settingsButton.innerText = config.nick;
     optionInput.nicknameInput.value = config.nick;
     optionInput.colorInputText.value = config.color;
@@ -535,18 +512,15 @@ function applyConfig() {
     optionInput.embedImagesInput.checked = config.embedImages;
     optionInput.embedYoutubeInput.checked = config.embedYoutube;
     optionInput.debugInput.checked = config.debug;
+    optionInput.serverInput.value = config.server;
 
-    // Remove block config rows except the block add button
     while (optionInput.blockForm.children.length > 1) {
         optionInput.blockForm.removeChild(optionInput.blockForm.firstElementChild);
     };
-
-    // Populate the block config with blocks from the config
     for (const block of config.blocks) {
         createBlockOption(block);
     };
-    
-    // If the user's nickname or color was changed, update it on trollbox
+
     if (currentNick !== config.nick ||
         currentColor !== config.color
     ) {
@@ -556,25 +530,6 @@ function applyConfig() {
     };
 
     console.log("applyConfig");
-};
-
-// Parse block settings and store them to config
-function parseBlockSettings () {
-    // Get each block entry
-    const blockOptionArray = Array.from(optionInput.blockForm.children).filter(function (child) {
-        return child.classList.contains('blockOption');
-    });
-    // Clear block config
-    config.blocks.length = 0;
-    // Store block entries to config
-    for (let block of blockOptionArray) {
-        const home = block.querySelector('.blockInputHome').value;
-        const comment = block.querySelector('.blockInputComment').value;
-        config.blocks.push(new Block(home, comment));
-    };
-
-    applyConfig();
-    writeConfig(config);
 };
 
 // Socket

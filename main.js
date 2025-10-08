@@ -1,14 +1,29 @@
-import { app, BrowserWindow, Menu, ipcMain, clipboard, shell } from 'electron';
-import path from 'node:path';
-import io from "socket.io-client";
-import fs from 'fs/promises';
-import { join } from 'path';
+const { app, BrowserWindow, Menu, ipcMain, clipboard, shell } = require('electron');
+const path = require('node:path');
+const io = require("socket.io-client");
+const fs = require('fs');
+var { join } = require('path');
 
-// Socket
+// configs
+let config = JSON.parse(fs.readFileSync(join(__dirname, 'config.json'), 'utf8'));
 
-export let socket = await io('ws://www.windows93.net:8081', {
-	forceNew: true,
-	transportOptions: {
+if(!fs.existsSync(join(__dirname, 'activity.log'))) {
+	fs.writeFileSync(join(__dirname, 'activity.log'), '=========== BEGIN LOG ==============', 'utf8'); // create the file
+}
+if(!fs.existsSync(join(__dirname, 'activity.json'))) {
+	fs.writeFileSync(join(__dirname, 'activity.json'), '[]', 'utf8'); // create the file
+}
+if(!config.server) {
+	config.server = "www.windows93.net:8081";
+	fs.writeFileSync(join(__dirname, 'config.json'), JSON.stringify(config, null, 2), 'utf8');
+}
+
+process.stdout.write('\x1b]0;Debug logs\x07')
+
+let transportOptions = {};
+if(config.server == "ws://www.windows93.net:8081") {
+	// duct tape fix
+	transportOptions = {
 		polling: {
 			extraHeaders: {
 				"Accept-Encoding": "identity",
@@ -24,27 +39,21 @@ export let socket = await io('ws://www.windows93.net:8081', {
 			}
 		}
 	}
+}
+
+// Socket
+
+if(config.debug) {
+	console.log('[debug:connection] Server:', `${config.server}`, '\nTransport options:', transportOptions);
+}
+
+let socket = io(config.server, {
+	forceNew: true,
+	transportOptions
 });
 
-async function fileExists(path) {
-	try {
-		await fs.access(path);
-		return true;
-	} catch {
-		return false;
-	};
-};
 
-let config = JSON.parse(await fs.readFile(join(import.meta.dirname, 'config.json'), 'utf8'));
-
-if(!await fileExists(join(import.meta.dirname, 'activity.log'))) {
-	await fs.writeFile(join(import.meta.dirname, 'activity.log'), '=========== BEGIN LOG ==============', 'utf8'); // create the file
-}
-if(!await fileExists(join(import.meta.dirname, 'activity.json'))) {
-	await fs.writeFile(join(import.meta.dirname, 'activity.json'), '[]', 'utf8'); // create the file
-}
-
-// Electron things
+// Electron stuff
 
 if(!config.debug) {
 	Menu.setApplicationMenu(null);
@@ -58,10 +67,10 @@ const createWindow = () => {
 			contextIsolation: true,
 			nodeIntegration: false,
 			nodeIntegrationInWorker: false,
-			preload: path.join(import.meta.dirname, "preload.cjs"),
+			preload: path.join(__dirname, "preload.cjs"),
 			devTools: !!config.debug
 		},
-		icon: path.join(import.meta.dirname, "icon.png")
+		icon: path.join(__dirname, "icon.png")
 	});
 
 	win.webContents.setWindowOpenHandler(({ url }) => {
@@ -80,8 +89,8 @@ const createWindow = () => {
 
 	socket.removeAllListeners();
 
-	ipcMain.on('getConfig', async function() {
-		config = JSON.parse(await fs.readFile(join(import.meta.dirname, 'config.json'), 'utf8'));
+	ipcMain.on('getConfig', function() {
+		config = JSON.parse(fs.readFileSync(join(__dirname, 'config.json'), 'utf8'));
 		win.webContents.send("recieveConfig", config);
 	});
 
@@ -160,39 +169,14 @@ app.on('window-all-closed', () => {
 	app.quit()
 });
 
-ipcMain.on('writeConfig', async function(_event, newConfig) {
+ipcMain.on('writeConfig', (_event, newConfig) => {
     try {
-        await fs.writeFileSync(join(import.meta.dirname, 'config.json'), JSON.stringify(newConfig, null, 2), 'utf8');
+        fs.writeFileSync(join(__dirname, 'config.json'), JSON.stringify(newConfig, null, 2), 'utf8');
         console.log("Config updated.");
     } catch (error) {
         console.error("Failed to write config: ", error);
     }
 });
 
-ipcMain.on('log', async function (_event, log) {
-	var _log = log;
-	const logKeys = "nick;color;home;content;trusted".split(";")
-	for(let i = 0; i < logKeys.length; i++) {
-		if(typeof log[logKeys[i]] === "undefined") {return;}
-		_log[logKeys[i]] = log[logKeys[i]].toString();
-	}
-	var date = new Date(Date.now())
-	let activityJSON = JSON.parse(await fs.readFile(join(import.meta.dirname, 'activity.json'), 'utf8'))
-	activityJSON.push(_log);
-	let logEntry = "";
-	logEntry += date.toLocaleString("en-US") + "\t" // add date/time
-	logEntry += "[color = " + _log.color.split(';')[0] + ", home = " + _log.home + "]\t" // add additional info
-	if(log.trusted) { // nick logic
-		logEntry += _log.nick + "\t"
-	} else {
-		logEntry += "[" + _log.nick + "]\t"
-	}
-	logEntry += _log.content // add message content
-	try {
-        await fs.writeFile(join(import.meta.dirname, 'activity.log'), fs.readFile(join(import.meta.dirname, 'activity.log'), 'utf8') + '\n' + logEntry, 'utf8');
-		await fs.writeFile(join(import.meta.dirname, 'activity.json'), JSON.stringify(activityJSON), 'utf8');
-        console.log("Activity log updated.");
-    } catch (error) {
-        console.error("Failed to write to activity log: ", error);
-    }
-})
+
+// removed: activity log
