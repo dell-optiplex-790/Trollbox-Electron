@@ -1,5 +1,6 @@
 {
     "nick": "user",
     "color": "green",
-    "debug": false
+    "debug": false,
+    "server": "www.windows93.net:8081"
 }

@@ -29,8 +29,15 @@ const optionInput = {
     embedImagesInput: document.getElementById("embedImagesInput"),
     embedYoutubeInput: document.getElementById("embedYoutubeInput"),
     debugInput: document.getElementById("debugInput"),
+    serverInput: document.getElementById("serverInput"),
+    serverInputContainer: document.getElementById("serverContainer"),
     reloadConfigInput: document.getElementById("reloadConfigInput"),
+    restoreServer: document.getElementById("restoreServer")
 };
+
+if(electronAPI.recieveConfig_callback && electronAPI.socketRecieve_callback) { // this is definetely running under dell's duct-tape browser fix
+    optionInput.serverInputContainer.style.display = 'none'; // compensate for that
+}
 
 // class User {
 //     constructor(nick, home, color, blocked, joinDate, trusted) {
@@ -60,14 +67,15 @@ class Block {
 };
 
 class Config {
-    constructor(nick, color, blocks, embedImages, embedYoutube, font, debug) {
+    constructor(nick, color, blocks, embedImages, embedYoutube, font, debug, server) {
         this.nick = nick ?? "anonymous";
         this.color = color ?? "white";
         this.blocks = blocks ?? [];
         this.embedImages = embedImages ?? false;
         this.embedYoutube = embedYoutube ?? false;
         this.font = font ?? undefined;
-        this.debug = debug ?? false
+        this.debug = debug ?? false;
+        this.server = server ?? 'ws://www.windows93.net:8081'
     };
 };
 
@@ -460,6 +468,19 @@ optionInput.debugInput.addEventListener("change", function () {
     writeConfig(config);
 });
 
+optionInput.serverInput.addEventListener("change", function () {
+    const value = optionInput.serverInput.value;
+    config.server = value;
+    applyConfig();
+    writeConfig(config);
+});
+
+optionInput.restoreServer.addEventListener("click", function () {
+    config.server = "ws://www.windows93.net:8081";
+    applyConfig();
+    writeConfig(config);
+});
+
 optionInput.reloadConfigInput.addEventListener("click", function () {
     getConfig();
 });
@@ -475,6 +496,7 @@ recieveConfig((recievedConfig) => {
     config.embedYoutube = recievedConfig.embedYoutube ?? false;
     config.font = recievedConfig.font;
     config.debug = recievedConfig.debug;
+    config.server = recievedConfig.server;
     applyConfig();
     if (!initialConfigRecieve) {
         initialConfigRecieve = true;
@@ -490,6 +512,7 @@ function applyConfig() {
     optionInput.embedImagesInput.checked = config.embedImages;
     optionInput.embedYoutubeInput.checked = config.embedYoutube;
     optionInput.debugInput.checked = config.debug;
+    optionInput.serverInput.value = config.server;
 
     while (optionInput.blockForm.children.length > 1) {
         optionInput.blockForm.removeChild(optionInput.blockForm.firstElementChild);
