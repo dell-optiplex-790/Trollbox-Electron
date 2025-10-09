@@ -21,7 +21,7 @@ jobs:
 
       - name: Generate a short hash
         id: hash
-        run: echo "short_hash=$(echo "${GITHUB_SHA}" | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: echo "short_hash=typescript-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       
       - name: Generate a tag
         run: git tag ${{ steps.hash.outputs.short_hash }}
