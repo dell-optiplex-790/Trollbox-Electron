@@ -10,33 +10,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        
       - name: Install dependancies
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+        uses: actions/setup-node@v5
         with:
           node-version: 20
-      - run: npm install
+        
       - name: Generate a build
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 20
-      - run: npm run build
-          
+        run: |
+          npm install
+          npm run build
 
-  generate-release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Generate a short hash
-      - id: hash
-      - run: echo "short_hash=$(echo "${GITHUB_SHA}" | cut -c1-7)" >> $GITHUB_OUTPUT
+        id: hash
+        run: echo "short_hash=$(echo "${GITHUB_SHA}" | cut -c1-7)" >> $GITHUB_OUTPUT
       
       - name: Generate a tag
-      - run: git tag ${{ steps.hash.outputs.short_hash }}
+        run: git tag ${{ steps.hash.outputs.short_hash }}
       
       - name: Generate a release
-      - uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2
         with:
           files: build.zip
           make_latest: true
