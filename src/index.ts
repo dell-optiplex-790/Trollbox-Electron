@@ -1,5 +1,6 @@
-"use strict";
-
+const luxon = require("luxon");
+const he = require("he");
+const DOMPurify = require("dompurify");
 const DateTime = luxon.DateTime;
 const socketReceive = window.electronAPI.socketReceive;
 const socketEmit = window.electronAPI.socketEmit;
@@ -7,7 +8,6 @@ const getConfig = window.electronAPI.getConfig;
 const recieveConfig = window.electronAPI.recieveConfig;
 const writeConfig = window.electronAPI.writeConfig;
 const copy = window.electronAPI.copy;
-const writeToLog = window.electronAPI.writeToLog;
 
 const roomPanel = document.getElementById("rooms");
 const chatPanel = document.getElementById("chat");
@@ -35,8 +35,8 @@ const optionInput = {
     restoreServer: document.getElementById("restoreServer")
 };
 
-if(electronAPI.recieveConfig_callback && electronAPI.socketRecieve_callback) { // this is definetely running under dell's duct-tape browser fix
-    optionInput.serverInputContainer.style.display = 'none'; // compensate for that
+if(window.electronAPI.recieveConfig_callback && window.electronAPI.socketRecieve_callback) { // this is definetely running under dell's duct-tape browser fix
+    optionInput.serverInputContainer!.style.display = 'none'; // compensate for that
 }
 
 // class User {
@@ -60,14 +60,14 @@ if(electronAPI.recieveConfig_callback && electronAPI.socketRecieve_callback) { /
 // };
 
 class Block {
-    constructor(home, comment) {
+    constructor(home: string, comment: string) {
         this.home = home;
         this.comment = comment;
     };
 };
 
 class Config {
-    constructor(nick, color, blocks, embedImages, embedYoutube, font, debug, server) {
+    constructor(nick: string, color: string, blocks: Array<Block>, embedImages: boolean, embedYoutube: boolean, font: string | undefined, debug: boolean, server: string) {
         this.nick = nick ?? "anonymous";
         this.color = color ?? "white";
         this.blocks = blocks ?? [];
@@ -88,7 +88,7 @@ let initialConfigRecieve = false;
 let currentNick = "";
 let currentColor = "";
 
-function createLinks(string) {
+function createLinks(string: string) {
     string = string.replace(
         /\bhttps?:\/\/[^\s<]+/gi,
         (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
@@ -96,18 +96,17 @@ function createLinks(string) {
     return string;
 };
 
-function createRoom(name) {
+function createRoom(name: string, rooms: HTMLElement) {
     const room = document.createElement("span");
     room.className = "room";
     room.innerText = name;
     room.addEventListener('click', (event) => {
-        socketEmit('message', '/r ' + event.target.innerText)
+        socketEmit('message', '/r ' + (<HTMLElement>event.target).innerText)
     })
-    rooms.appendChild(room);
+    roomPanel!.appendChild(room);
 };
 
-function createMessage(timestamp, nick, color, home, content, trusted) {
-    writeToLog({timestamp: Date.now(), nick, color, home, content, trusted})
+function createMessage(timestamp: string, nick: string, color: string, home: string, content: string, trusted: boolean) {
     const message = document.createElement("span");
     message.className = "message";
 
@@ -144,15 +143,15 @@ function createMessage(timestamp, nick, color, home, content, trusted) {
     message.appendChild(messageContent);
 
     const MAX_MESSAGES = 250;
-    while (chat.children.length >= MAX_MESSAGES) {
-        chat.removeChild(chat.firstChild);
+    while (chatPanel!.children.length >= MAX_MESSAGES) {
+        chatPanel!.removeChild(<HTMLElement>chatPanel!.firstChild);
     }
 
-    chat.appendChild(message);
-    chat.lastChild.scrollIntoView(true);
+    chatPanel!.appendChild(message);
+    (<HTMLElement>chatPanel!.lastChild!).scrollIntoView(true);
 };
 
-function createUser(nick, color, home, bot, trusted) {
+function createUser(nick: string, color: string, home: string, bot: boolean, trusted: boolean) {
     const user = document.createElement("span");
     user.style.fontWeight = "bold";
     user.className = "user";
@@ -179,7 +178,7 @@ function createUser(nick, color, home, bot, trusted) {
     bdiWrapper.title = home;
 
     bdiWrapper.addEventListener('click', (event) => {
-        copy(event.target.title);
+        copy((<HTMLElement>event.target!).title);
     })
     bdiWrapper.addEventListener("contextmenu", function (event) { // Right-click
         event.preventDefault();
@@ -200,9 +199,9 @@ function createUser(nick, color, home, bot, trusted) {
 
     user.appendChild(bdiWrapper);
     if (color && !cssColor.isInvisible(color)) {
-        user.style = "color: white; color: " + color + ";";
+        user.style.color = color;
     } else {
-        user.style = "color: white;";
+        user.style.color = "white";
     };
     if (isHomeBlocked(home)) {
         user.classList.add("blocked");
@@ -214,11 +213,11 @@ function createUser(nick, color, home, bot, trusted) {
     return user;
 };
 
-function isHomeBlocked(home) {
+function isHomeBlocked(home: string): boolean {
     return config.blocks.some(block => block.home === home);
 };
 
-function createBlockOption(block) {
+function createBlockOption(block: Block) {
     const blockOption = document.createElement("span");
     blockOption.classList.add("blockOption");
     const blockRemoveButton = document.createElement("button");
@@ -254,16 +253,16 @@ function createBlockOption(block) {
     const lineBreak = document.createElement("br");
     blockOption.appendChild(lineBreak);
 
-    const children = optionInput.blockForm.children;
-    const lastChildIndex = optionInput.blockForm.children.length - 1;
+    const children = optionInput.blockForm!.children;
+    const lastChildIndex = optionInput.blockForm!.children.length - 1;
     const lastChild = children[lastChildIndex] ?? null;
-    optionInput.blockForm.insertBefore(blockOption, lastChild);
+    optionInput.blockForm!.insertBefore(blockOption, lastChild);
 };
 
 // CSS Colors
 
 const cssColor = {
-    isInvisible: function (color) {
+    isInvisible: function (color: string) {
         const testElement = document.createElement("span");
         testElement.style.color = color;
         testElement.style.display = "none"; // avoid flashing
@@ -281,7 +280,7 @@ const cssColor = {
         const bg = getComputedStyle(document.body).backgroundColor.toLowerCase();
         return computed.toLowerCase() === bg;
     },
-    toComputedHex: function (colorInput) {
+    toComputedHex: function (colorInput: string) {
         const temp = document.createElement("div");
         temp.style.color = colorInput;
         temp.style.display = "none";
@@ -290,18 +289,18 @@ const cssColor = {
         const computed = getComputedStyle(temp).color;
         document.body.removeChild(temp);
 
-        const [r, g, b, a] = computed.match(/\d+(\.\d+)?/g).map(Number);
-        const toHex = (n) => n.toString(16).padStart(2, "0");
+        const [r, g, b, a] = (<Array<number>>computed.match(/\d+(\.\d+)?/g)?.map(Number));
+        const toHex = (n: number) => n.toString(16).padStart(2, "0");
 
         const hex = "#" + toHex(r) + toHex(g) + toHex(b);
         return a !== undefined && a < 1 ? hex + toHex(Math.round(a * 255)) : hex;
     },
-    namedToHex: function (colorName) {
+    namedToHex: function (colorName: string) {
         const ctx = document.createElement("canvas").getContext("2d");
-        ctx.fillStyle = colorName;
-        return ctx.fillStyle;
+        ctx!.fillStyle = colorName;
+        return ctx!.fillStyle;
     },
-    rgbToHex: function (input) {
+    rgbToHex: function (input: string) {
         const normalize = input.trim().toLowerCase();
         const legacyMatch = normalize.match(/rgba?\(([^)]+)\)/);
         const modernMatch = normalize.match(/rgba?\(([^/]+)\/([^)]+)\)/);
@@ -321,12 +320,12 @@ const cssColor = {
             return null; // Not an RGB(A) value
         }
 
-        const toHex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+        const toHex = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
         const alphaHex = toHex(a * 255);
 
         return "#" + toHex(r) + toHex(g) + toHex(b) + (a < 1 ? alphaHex : "");
     },
-    hslToHex: function (input) {
+    hslToHex: function (input: string) {
         input = input.trim().toLowerCase();
 
         const legacy = input.match(/hsla?\(([^)]+)\)/);          // hsl(...) or hsla(...)
@@ -366,7 +365,7 @@ const cssColor = {
         else if (h < 300) [r, g, b] = [x, 0, c];
         else[r, g, b] = [c, 0, x];
 
-        const toHex = v => Math.round(255 * (v + m)).toString(16).padStart(2, "0");
+        const toHex = (v: number) => Math.round(255 * (v + m)).toString(16).padStart(2, "0");
         const alphaHex = a < 1 ? Math.round(255 * a).toString(16).padStart(2, "0") : "";
 
         return "#" + toHex(r) + toHex(g) + toHex(b) + alphaHex;
@@ -376,7 +375,7 @@ const cssColor = {
 // Program flow
 
 // Chat
-chatInput.addEventListener('keydown', function (event) {
+chatInput!.addEventListener('keydown', function (event) {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         sendChatInput();
@@ -384,32 +383,32 @@ chatInput.addEventListener('keydown', function (event) {
     }
 });
 
-sendButton.addEventListener("click", () => {
+sendButton!.addEventListener("click", () => {
     sendChatInput();
     clearChatInput();
 });
 
 function sendChatInput() {
-    if (chatInput.value !== '') {
-        socketEmit("message", chatInput.value);
+    if ((<HTMLFormElement>chatInput).value !== '') {
+        socketEmit("message", (<HTMLFormElement>chatInput!).value);
     };
 };
 
 function clearChatInput() {
-    chatInput.value = "";
-    chatInput.innerHTML = '';
+    (<HTMLFormElement>chatInput).value = "";
+    chatInput!.innerHTML = '';
 };
 
 // Settings
-settingsButton.addEventListener("click", toggleSettings);
+settingsButton!.addEventListener("click", toggleSettings);
 
 function toggleSettings() {
-    if (settings.classList.contains("hidden")) {
-        settings.classList.remove("hidden");
-        chat.classList.add("hidden");
+    if (settingPanel!.classList.contains("hidden")) {
+        settingPanel!.classList.remove("hidden");
+        chatPanel!.classList.add("hidden");
     } else {
-        settings.classList.add("hidden");
-        chat.classList.remove("hidden");
+        settingPanel!.classList.add("hidden");
+        chatPanel!.classList.remove("hidden");
     };
 };
 
@@ -419,76 +418,96 @@ document.querySelectorAll("form").forEach(form => {
     });
 });
 
-optionInput.nicknameInput.addEventListener("change", function () {
-    const value = optionInput.nicknameInput.value;
+optionInput.nicknameInput!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.nicknameInput).value;
     config.nick = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.colorInputPicker.addEventListener("change", function () {
-    const value = optionInput.colorInputPicker.value;
-    optionInput.colorInputText.value = value;
+optionInput.colorInputPicker!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.colorInputPicker).value;
+    (<HTMLFormElement>optionInput.colorInputText).value = value;
     config.color = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.colorInputPicker.addEventListener("input", function () {
-    const value = optionInput.colorInputPicker.value;
-    optionInput.colorInputText.value = value;
+optionInput.colorInputPicker!.addEventListener("input", function () {
+    const value = (<HTMLFormElement>optionInput.colorInputPicker).value;
+    (<HTMLFormElement>optionInput.colorInputText).value = value;
 });
 
-optionInput.colorInputText.addEventListener("change", function () {
-    const value = optionInput.colorInputText.value;
-    optionInput.colorInputPicker.value = cssColor.toComputedHex(value);
+optionInput.colorInputText!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.colorInputText).value;
+    (<HTMLFormElement>optionInput.colorInputPicker).value = cssColor.toComputedHex(value);
     config.color = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.embedImagesInput.addEventListener("change", function () {
-    const value = optionInput.embedImagesInput.checked;
+optionInput.embedImagesInput!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.embedImagesInput).checked;
     config.embedImages = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.embedYoutubeInput.addEventListener("change", function () {
-    const value = optionInput.embedYoutubeInput.checked;
+optionInput.embedYoutubeInput!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.embedYoutubeInput).checked;
     config.embedYoutube = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.debugInput.addEventListener("change", function () {
-    const value = optionInput.debugInput.checked;
+optionInput.debugInput!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.debugInput).checked;
     config.debug = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.serverInput.addEventListener("change", function () {
-    const value = optionInput.serverInput.value;
+optionInput.serverInput!.addEventListener("change", function () {
+    const value = (<HTMLFormElement>optionInput.serverInput).value;
     config.server = value;
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.restoreServer.addEventListener("click", function () {
+optionInput.restoreServer!.addEventListener("click", function () {
     config.server = "ws://www.windows93.net:8081";
     applyConfig();
     writeConfig(config);
 });
 
-optionInput.reloadConfigInput.addEventListener("click", function () {
+optionInput.reloadConfigInput!.addEventListener("click", function () {
     getConfig();
 });
 
 // Configuration
-const config = new Config();
 
-recieveConfig((recievedConfig) => {
+/*
+        this.nick = nick ?? "anonymous";
+        this.color = color ?? "white";
+        this.blocks = blocks ?? [];
+        this.embedImages = embedImages ?? false;
+        this.embedYoutube = embedYoutube ?? false;
+        this.font = font ?? undefined;
+        this.debug = debug ?? false;
+        this.server = server ?? 'ws://www.windows93.net:8081'
+*/
+let config = new Config(
+    "anonymous",                    // nick
+    "#bf6a28",                      // color
+    [],                             // blocks
+    false,                          // embedImages
+    false,                          // embedYoutube
+    undefined,                      // font (unused i think)
+    false,                          // debug
+    'ws://www.windows93.net:8081'   // server
+);
+
+recieveConfig((recievedConfig: {nick: string, color: string, blocks: Array<Block>, embedImages: boolean, embedYoutube: boolean, font: string | undefined, debug: boolean, server: string}) => {
     config.nick = recievedConfig.nick ?? "anonymous";
     config.color = recievedConfig.color ?? "white";
     config.blocks = recievedConfig.blocks ?? [];
@@ -505,17 +524,17 @@ recieveConfig((recievedConfig) => {
 });
 
 function applyConfig() {
-    settingsButton.innerText = config.nick;
-    optionInput.nicknameInput.value = config.nick;
-    optionInput.colorInputText.value = config.color;
-    optionInput.colorInputPicker.value = cssColor.toComputedHex(config.color);
-    optionInput.embedImagesInput.checked = config.embedImages;
-    optionInput.embedYoutubeInput.checked = config.embedYoutube;
-    optionInput.debugInput.checked = config.debug;
-    optionInput.serverInput.value = config.server;
+    settingsButton!.innerText = config.nick;
+    (<HTMLFormElement>optionInput.nicknameInput).value = config.nick;
+    (<HTMLFormElement>optionInput.colorInputText).value = config.color;
+    (<HTMLFormElement>optionInput.colorInputPicker).value = cssColor.toComputedHex(config.color);
+    (<HTMLFormElement>optionInput.embedImagesInput).checked = config.embedImages;
+    (<HTMLFormElement>optionInput.embedYoutubeInput).checked = config.embedYoutube;
+    (<HTMLFormElement>optionInput.debugInput).checked = config.debug;
+    (<HTMLFormElement>optionInput.serverInput).value = config.server;
 
-    while (optionInput.blockForm.children.length > 1) {
-        optionInput.blockForm.removeChild(optionInput.blockForm.firstElementChild);
+    while (optionInput.blockForm!.children.length > 1) {
+        optionInput.blockForm!.removeChild(optionInput.blockForm!.firstElementChild!);
     };
     for (const block of config.blocks) {
         createBlockOption(block);
@@ -533,7 +552,7 @@ function applyConfig() {
 };
 
 // Socket
-socketReceive(function (event) {
+socketReceive(function (event: {name: string, data: any}) {
     if (event.name === "connect") {
         console.log("Connected");
         if (!initialConfigRecieve) {
@@ -542,19 +561,19 @@ socketReceive(function (event) {
             socketUserJoin();
         };
     } else if (event.name === "update users") {
-        users.innerHTML = "";
-        rooms.innerHTML = "";
-        const roomsList = [];
+        userPanel!.innerHTML = "";
+        roomPanel!.innerHTML = "";
+        const roomsList: Array<string> = [];
         for (let user in event.data) {
             const userLocation = event.data[user]
             const createdUser = createUser(userLocation.nick, userLocation.color, userLocation.home, userLocation.isBot, false);
-            users.appendChild(createdUser);
+            userPanel!.appendChild(createdUser);
             if (!roomsList.includes(userLocation.room)) {
                 roomsList.push(userLocation.room);
-                createRoom(userLocation.room);
+                createRoom(userLocation.room, roomPanel!);
             }
         };
-        users.firstChild.classList.add("king");
+        (<HTMLElement>userPanel!.firstChild!).classList.add("king");
 
     } else if (event.name === "user joined") {
         const date = DateTime.fromMillis(Date.now());
@@ -585,7 +604,7 @@ socketReceive(function (event) {
             const date = DateTime.fromMillis(Date.now());
             const timestamp = date.toLocaleString(DateTime.TIME_SIMPLE);
             const parsedContent = he.decode(event.data.msg).replace(/(?:\r\n|\r|\n)/g, '\n');
-            createMessage(timestamp, event.data.nick, event.data.color, event.data.home, parsedContent, event.data.home === 'trollbox', false);
+            createMessage(timestamp, event.data.nick, event.data.color, event.data.home, parsedContent, event.data.home === 'trollbox');
         };
     };
 });

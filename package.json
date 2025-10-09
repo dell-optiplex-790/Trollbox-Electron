@@ -5,16 +5,26 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "install": "npm i electron -g",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install": "npm i webpack webpack-cli terser -g",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:cache": "npx tsc --outDir cache && node helpers/minifyAll.js && webpack build ./cache/index.js",
+    "build:pack": "node helpers/zipitup.js",
+    "build": "npm run build:cache && npm run build:pack"
   },
   "author": "Ruxvania",
   "license": "MIT",
   "devDependencies": {
-    "electron": "latest"
+    "copy-webpack-plugin": "^13.0.1",
+    "electron": "^38.2.2",
+    "jszip": "^3.10.1",
+    "typescript": "^5.9.3",
+    "webpack-cli": "^6.0.1"
   },
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
+    "dompurify": "^3.2.7",
+    "he": "^1.2.0",
+    "luxon": "^3.7.2",
     "socket.io-client": "^2.2.0"
   }
 }

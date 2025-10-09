@@ -1,10 +1,10 @@
 @font-face {
-    font-family: 'Comic Mono';
+    font-family: 'Comic Code Ligatures', 'Comic Code', 'Comic Mono';
     src: url('ComicMono.ttf')
 }
 
 :root {
-    font-family: /*  "Comic Code Ligatures", "Comic Code"  // Comic Code isn't free, so I cannot include it. You'll have to live with Comic Mono, which is a free font.  */ "Comic Mono", monospace;
+    font-family: "Comic Code Ligatures", "Comic Code", "Comic Mono", monospace;
     color: snow;
     background: midnightblue;
     scrollbar-color: white transparent;
