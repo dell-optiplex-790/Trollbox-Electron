@@ -531,7 +531,7 @@ socketReceive(function (event: {name: string, data: any}) {
 });
 
 function socketUserJoin() {
-    socketEmit("user joined", config.nick, config.color, "", "");
+    socketEmit("user joined", config.nick, config.color + `;!#${btoa(JSON.stringify(config.extraData))}`, "", "");
 };
 
 function socketReconnect() {

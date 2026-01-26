@@ -14,6 +14,9 @@ declare global {
         font?: string;
         debug?: boolean;
         server?: string;
+        extraData?: {
+            bio?: string;
+        }
     } 
     
 }

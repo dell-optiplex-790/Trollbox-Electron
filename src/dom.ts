@@ -22,7 +22,8 @@ const optionInput: Record<string, HTMLFormElement> = {
     serverInput: <HTMLFormElement>document.getElementById("serverInput"),
     serverInputContainer: <HTMLFormElement>document.getElementById("serverContainer"),
     reloadConfigInput: <HTMLFormElement>document.getElementById("reloadConfigInput"),
-    restoreServer: <HTMLFormElement>document.getElementById("restoreServer")
+    restoreServer: <HTMLFormElement>document.getElementById("restoreServer"),
+    extraData: <HTMLFormElement>document.getElementById("userBio")
 };
 
 export {roomPanel, chatInput, chatPanel, settingPanel, settingsButton, sendButton, userPanel, blockInputAdd, optionInput}

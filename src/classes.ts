@@ -8,6 +8,9 @@ class Config {
         this.font = cfg.font ?? "Comic Mono";
         this.debug = cfg.debug ?? false;
         this.server = cfg.server ?? 'ws://www.windows93.net:8081'
+        this.extraData = cfg.extraData ? {
+            bio: cfg.extraData.bio ?? ''
+        } : { bio: '' }
     };
     nick: string;
     color: string;
@@ -17,6 +20,9 @@ class Config {
     font: string;
     debug: boolean;
     server: string;
+    extraData: {
+        bio: string;
+    }   
 };
 
 class Block {
