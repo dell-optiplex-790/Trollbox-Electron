@@ -5,15 +5,15 @@ declare global {
         comment: string;
     }
     
-    interface Config {
-        nick: string;
-        color: string;
-        blocks: Array<Block>;
-        embedImages: Boolean;
-        embedYoutube: Boolean;
-        font: string | undefined;
-        debug: Boolean;
-        server: string;
+    interface ConfigObj {
+        nick?: string;
+        color?: string;
+        blocks?: Array<Block>;
+        embedImages?: boolean;
+        embedYoutube?: boolean;
+        font?: string;
+        debug?: boolean;
+        server?: string;
     } 
     
 }

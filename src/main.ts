@@ -1,11 +1,12 @@
-const { app, BrowserWindow, Menu, ipcMain, clipboard, shell } = require('electron');
-const path = require('node:path');
-const io = require("socket.io-client");
-const fs = require('fs');
-const configPath = path.join(__dirname, 'config.json');
+import { app, BrowserWindow, Menu, ipcMain, clipboard, shell } from 'electron';
+import { join } from 'node:path';
+import io = require("socket.io-client");
+import { existsSync, writeFileSync, readFileSync } from 'fs';
+import { homedir } from 'node:os';
+const configPath = join(homedir(), 'config.json');
 
-if(!fs.existsSync(configPath)) {
-	fs.writeFileSync(configPath, JSON.stringify({
+if(!existsSync(configPath)) {
+	writeFileSync(configPath, JSON.stringify({
         nick: "anonymous",
         color: "#bf6a28",
         blocks: [],
@@ -16,13 +17,12 @@ if(!fs.existsSync(configPath)) {
 	}, null, 2));
 }
 
-
 // configs
-let _config: {nick: string, color: string, blocks: Array<Block>, embedImages: boolean, embedYoutube: boolean, font: string | undefined, debug: boolean, server: string} = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+let _config: {nick: string, color: string, blocks: Array<Block>, embedImages: boolean, embedYoutube: boolean, font: string | undefined, debug: boolean, server: string} = JSON.parse(readFileSync(configPath, 'utf8'));
 
 if(!_config.server) {
 	_config.server = "www.windows93.net:8081";
-	fs.writeFileSync(configPath, JSON.stringify(_config, null, 2), 'utf8');
+	writeFileSync(configPath, JSON.stringify(_config, null, 2), 'utf8');
 }
 
 process.stdout.write('\x1b]0;Debug logs\x07')
@@ -74,14 +74,14 @@ const createWindow = () => {
 			contextIsolation: true,
 			nodeIntegration: false,
 			nodeIntegrationInWorker: false,
-			preload: path.join(__dirname, "preload.js"),
+			preload: join(__dirname, "preload.js"),
 			devTools: !!_config.debug
 		},
-		icon: path.join(__dirname, "icon.png")
+		icon: join(__dirname, "icon.png")
 	});
 
-	win.webContents.setWindowOpenHandler((url: string) => {
-		shell.openExternal(url);
+	win.webContents.setWindowOpenHandler((details) => {
+		shell.openExternal(details.url);
 		return { action: 'deny' };
 	});
 
@@ -97,7 +97,7 @@ const createWindow = () => {
 	socket.removeAllListeners();
 
 	ipcMain.on('getConfig', function() {
-		_config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+		_config = JSON.parse(readFileSync(configPath, 'utf8'));
 		win.webContents.send("recieveConfig", _config);
 	});
 
@@ -109,18 +109,14 @@ const createWindow = () => {
 
 	socket.on("connect_error", (error: object) => {
 		sendEventToWindow("connect_error", error);
-		if (!socket.active) {
-			console.error(error);
-			socket.connect();
-		}
+		console.error(error);
+		socket.connect();
 	});
 
 	socket.on("disconnect", (reason: object) => {
 		sendEventToWindow("disconnect", reason);
-		if (!socket.active) {
-			console.error(reason);
-			socket.connect();
-		}
+		console.error(reason);
+		socket.connect();
 	});
 
 	// Trollbox events
@@ -155,7 +151,7 @@ const createWindow = () => {
 	});
 };
 
-function handleSocketEmit(_event: any, data: Array<any>) {
+function handleSocketEmit(_event: any, data: [string, ...string[]]) {
 	socket.emit(...data);
 };
 
@@ -172,13 +168,13 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-	socket.destroy()
-	app.quit()
+	app.quit();
+	process.exit();
 });
 
 ipcMain.on('writeConfig', (_event: any, newConfig: object) => {
     try {
-        fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2), 'utf8');
+        writeFileSync(configPath, JSON.stringify(newConfig, null, 2), 'utf8');
         console.log("Config updated.");
     } catch (error) {
         console.error("Failed to write config: ", error);

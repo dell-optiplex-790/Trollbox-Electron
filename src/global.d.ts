@@ -5,7 +5,7 @@ declare global {
             recieveConfig: (callback: Function) => void;
             socketRecieve_callback: ((callback: Function) => void) | undefined;
             recieveConfig_callback: ((callback: Function) => void) | undefined;
-            writeConfig: (config: Config) => void;
+            writeConfig: (config: ConfigObj) => void;
             copy: (text: string) => void;
             socketEmit: (event: string, ...data: any) => void;
             getConfig: () => void;

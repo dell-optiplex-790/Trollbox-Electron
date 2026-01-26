@@ -1,10 +1,18 @@
 var { join } = require('path');
-var CopyPlugin = require("copy-webpack-plugin");
 var fs = require('fs');
+var CopyPlugin = require("copy-webpack-plugin");
+var nodeExternals = require('webpack-node-externals');
 
 module.exports = {
     mode: 'production',
-    target: ['web', 'es5'],
+    target: ['node'],
+    output: {
+        filename: 'preload.js',
+        path: join(__dirname, 'cache')
+    },
+    entry: {
+        main: "./src/preload.ts",
+    },
     resolve: {
         extensions: ['.ts', '.js'],
     },
@@ -12,10 +20,6 @@ module.exports = {
         rules: [
             { test: /\.ts$/, use: 'ts-loader' },
         ],
-    },
-    output: {
-        filename: 'index.js',
-        path: join(__dirname, 'cache')
     },
     plugins: [
         new CopyPlugin({
@@ -37,4 +41,8 @@ module.exports = {
             }
         }
     ],
-};
+    externals: [nodeExternals()],
+    externalsPresets: {
+        node: true
+    },
+}
