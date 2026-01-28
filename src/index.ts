@@ -83,7 +83,7 @@ function createMessage(timestamp: string, nick: string, color: string, home: str
     (<HTMLElement>chatPanel!.lastChild!).scrollIntoView(true);
 };
 
-function createUser(nick: string, color: string, home: string, bot: boolean, trusted: boolean) {
+function createUser(nick: string, color: string, home: string, bot: boolean, trusted: boolean, extraData?: string) {
     const user = document.createElement("span");
     user.style.fontWeight = "bold";
     user.className = "user";
@@ -338,6 +338,30 @@ function clearChatInput() {
     chatInput.innerHTML = '';
 };
 
+function extraData(color: string): ExtraData {
+    var chunks = color.split(';');
+    var ed: ExtraData = {
+        bio: '',
+        client: 'trollbox'
+    }
+    var dataIdx = chunks.map(e => e.startsWith('!#')).indexOf(true);
+    if(dataIdx == -1) {
+        return ed
+    }
+    var json: Record<string, any>, decoded: string;
+    try {
+        decoded = atob(chunks[dataIdx].slice(2));
+        json = JSON.parse(decoded);
+    } catch {
+        return ed;
+    }
+    ed = {...ed, ...json, 
+        bio: typeof json.bio == 'string' ? json.bio : ed.bio,
+        client: typeof json.client == 'string' ? json.client : ed.client,
+    };
+    return ed;
+}
+
 // Settings
 settingsButton.addEventListener("click", toggleSettings);
 
@@ -531,7 +555,7 @@ socketReceive(function (event: {name: string, data: any}) {
 });
 
 function socketUserJoin() {
-    socketEmit("user joined", config.nick, config.color + `;!#${btoa(JSON.stringify(config.extraData))}`, "", "");
+    socketEmit("user joined", config.nick, config.color + `;!#${btoa(JSON.stringify({...config.extraData, client: 'ruxvania'}))}`, "", "");
 };
 
 function socketReconnect() {

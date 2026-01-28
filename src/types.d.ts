@@ -14,11 +14,13 @@ declare global {
         font?: string;
         debug?: boolean;
         server?: string;
-        extraData?: {
-            bio?: string;
-        }
+        extraData?: ExtraData;
     } 
     
+    interface ExtraData {
+        bio?: string;
+        client?: string; /* expected values: bot, ruxvania, trollbox */
+    }
 }
 
 
